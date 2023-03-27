@@ -99,7 +99,7 @@ class KNearestNeighbor(object):
             #######################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            dists[i, :] = np.sqrt(np.sum(np.power(self.X_train - X[i], 2), axis=1))
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return dists
@@ -129,7 +129,10 @@ class KNearestNeighbor(object):
         #########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        train_squared = np.sum(np.power(self.X_train, 2), axis=1)
+        pred_squared = np.sum(np.power(X, 2), axis=1)
+        mal_mat = np.matmul(self.X_train, X.T)
+        dists = np.sqrt(np.add.outer(train_squared, pred_squared) - 2 * mal_mat).T
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return dists
