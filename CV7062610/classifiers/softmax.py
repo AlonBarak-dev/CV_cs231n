@@ -33,14 +33,32 @@ def softmax_loss_naive(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
-
+    # calculate predictions
+    loss_vec = []
     # Softmax Loss
 
-    
-    # Regularization
-    
+    # caclulate loss for each sample
+    for x, y in zip(X, y):
+        # calculate the loss function
+        pred_i = np.dot(x, W)   # shape : (N, C) -> (num_samples, num_classes)
+        sum_of_all_classes = np.sum(np.exp(pred_i))
+        real_class = np.exp(pred_i[y])
+        # loss for i_th sample
+        L_i = -np.log(real_class / sum_of_all_classes)
+        loss_vec.append(L_i)
 
+        # update the gradient
+        for c in range(W.shape[1]):
+            L_k = np.exp(pred_i[c]) / sum_of_all_classes
+            dW[:, c] += (L_k - (c == y)) * x
+
+    # Regularization
+    reg_loss = (0.5 * reg) * np.sum(W * W)
+    reg_dw = reg*W
+    loss = (1/X.shape[0]) * np.sum(loss_vec) + reg_loss
+    # regulaize and normalize the dW
+    dW /= X.shape[0]
+    dW = dW + reg_dw
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     return loss, dW
