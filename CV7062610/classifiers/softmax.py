@@ -41,6 +41,7 @@ def softmax_loss_naive(W, X, y, reg):
     for x, y in zip(X, y):
         # calculate the loss function
         pred_i = np.dot(x, W)   # shape : (N, C) -> (num_samples, num_classes)
+        pred_i -= np.max(pred_i)  # safty procedure
         sum_of_all_classes = np.sum(np.exp(pred_i))
         real_class = np.exp(pred_i[y])
         # loss for i_th sample
@@ -82,8 +83,29 @@ def softmax_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    num_classes = W.shape[1]
+    num_samples = X.shape[0]
 
+    # Softmax
+
+    predictions = np.dot(X, W)  # shape: (N, C)
+    predictions -= np.max(predictions, axis=1, keepdims=True) # safty procedure
+    sum_of_all_classes = np.sum(np.exp(predictions), axis=1, keepdims=True)
+    exp_all = (np.exp(predictions)/sum_of_all_classes)
+    real_class = exp_all[np.arange(num_samples), y]
+    loss = np.sum(-np.log(real_class))
+    reg_loss = (0.5 * reg) * np.sum(W * W)
+    loss = (1/num_samples) * loss + reg_loss
+
+    # Gradient
+
+    truth_mat = np.zeros_like(exp_all)
+    truth_mat[np.arange(num_samples), y] = 1
+    diff = exp_all - truth_mat
+    dW = np.dot(X.T, diff)
+    reg_dw = reg*W
+    dW /= num_samples
+    dW = dW + reg_dw
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     return loss, dW
