@@ -56,8 +56,10 @@ class LinearClassifier(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
-
+            # load data for the current step
+            step_indices = np.random.choice(num_train, size=batch_size, replace=True) # generate random indices
+            X_batch = X[step_indices]
+            y_batch = y[step_indices]
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
             # evaluate loss and gradient
@@ -71,8 +73,7 @@ class LinearClassifier(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
-
+            self.W -= learning_rate*grad
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
             if verbose and it % 100 == 0:
@@ -100,8 +101,15 @@ class LinearClassifier(object):
         # Implement this method. Store the predicted labels in y_pred.            #
         ###########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        weights_mul_input = np.dot(X, self.W)
+        exp_weights = np.exp(weights_mul_input)
+        predictions =[]
+        for sample in exp_weights:
+            logit = sample / np.max(sample)
+            predict = np.argmax(logit)
+            predictions.append(predict)
 
-        pass
+        y_pred = np.array(predictions)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return y_pred
