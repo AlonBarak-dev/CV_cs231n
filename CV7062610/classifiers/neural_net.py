@@ -108,7 +108,7 @@ class TwoLayerNet(object):
         # add regularization
         loss += 0.5 * reg * (np.sum(W1**2) + np.sum(W2**2))
 
-        safe_exp[range(N), y] = -1
+        safe_exp[range(N), y]  -= 1
         dloss = safe_exp / N
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -173,6 +173,7 @@ class TwoLayerNet(object):
         loss_history = []
         train_acc_history = []
         val_acc_history = []
+        initial_lr = learning_rate
 
         for it in range(num_iters):
             X_batch = None
@@ -184,7 +185,9 @@ class TwoLayerNet(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            indices = np.random.choice(num_train, batch_size, replace=True)
+            X_batch = X[indices]
+            y_batch = y[indices]
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -200,7 +203,16 @@ class TwoLayerNet(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            curr_lr = (learning_rate_decay ** it) *  initial_lr
+
+
+            self.params['W1'] -= curr_lr * grads['W1']
+            self.params['b1'] -= curr_lr * grads['b1']
+            self.params['W2'] -= curr_lr * grads['W2']
+            self.params['b2'] -= curr_lr * grads['b2']
+
+            # update the learning rate
+            
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -245,8 +257,22 @@ class TwoLayerNet(object):
         # TODO: Implement this function; it should be VERY simple!                #
         ###########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        W1, b1 = self.params['W1'], self.params['b1']
+        W2, b2 = self.params['W2'], self.params['b2']
+        N, D = X.shape
 
-        pass
+        out1 = np.dot(X, W1) + b1   # input layer
+        out1_relu = np.maximum(0, out1)   # ReLu
+        scores = np.dot(out1_relu, W2) + b2   # output layer
+        safe_exp = np.exp(scores - np.max(scores))
+
+        predictions =[]
+        for sample in safe_exp:
+            logit = sample / np.max(sample)
+            predict = np.argmax(logit)
+            predictions.append(predict)
+
+        y_pred = np.array(predictions)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
