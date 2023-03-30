@@ -80,7 +80,9 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        out1 = np.dot(X, W1) + b1   # input layer
+        out1_relu = np.maximum(0, out1)   # ReLu
+        scores = np.dot(out1_relu, W2) + b2   # output layer
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -98,7 +100,16 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        # Softmax
+        safe_exp = np.exp(scores - np.max(scores))
+        safe_exp = (safe_exp) / np.sum(safe_exp, axis=1, keepdims=True)
+        # cross entropy
+        loss = (1/N) * np.sum(-np.log(safe_exp[range(N), y]))
+        # add regularization
+        loss += 0.5 * reg * (np.sum(W1**2) + np.sum(W2**2))
+
+        safe_exp[range(N), y] = -1
+        dloss = safe_exp / N
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -111,7 +122,24 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        # calculate the gradients of the hidden layer
+        dout = np.dot(dloss, W2.T)
+        dW2 = np.dot(out1_relu.T, dloss)
+        db2 = np.sum(dloss, axis=0)
+
+        # calculate the gradients of the Relu layer
+        dhidden = dout * (out1 > 0)
+
+        # calculate the gradients of the input layer
+        dinput = np.dot(dhidden, W1.T)
+        dW1 = np.dot(X.T, dhidden)
+        db1 = np.sum(dhidden, axis=0)
+
+        # Regularization
+        dW1 += reg * W1
+        dW2 += reg * W2
+
+        grads = {'W1': dW1, 'b1': db1, 'W2': dW2, 'b2': db2}
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
