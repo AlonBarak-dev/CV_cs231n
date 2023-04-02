@@ -203,8 +203,7 @@ class TwoLayerNet(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            curr_lr = (learning_rate_decay ** it) *  initial_lr
-
+            curr_lr = (learning_rate_decay) *  initial_lr
 
             self.params['W1'] -= curr_lr * grads['W1']
             self.params['b1'] -= curr_lr * grads['b1']
