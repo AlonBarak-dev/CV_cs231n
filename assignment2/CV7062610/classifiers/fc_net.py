@@ -95,21 +95,8 @@ class TwoLayerNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         
-        N, D = X.shape
-
-
-        # input layer
-        h1 = X @ W1 
-        h1 += b1
-
-        # ReLu
-        h1_relu = np.maximum(0, h1)
-
-        # hidden layer
-        h2 = h1_relu @ W2
-        h2 += b2
-
-        scores = h2
+        h1, cache_1 = affine_relu_forward(X, W1, b1)
+        scores, cache_2 = affine_forward(h1, W2, b2)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -133,37 +120,21 @@ class TwoLayerNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        # Softmax
-        safe_exp = np.exp(scores - np.max(scores))
-        safe_exp = (safe_exp) / np.sum(safe_exp, axis=1, keepdims=True)
-        # cross entropy
-        loss = (1/N) * np.sum(-np.log(safe_exp[range(N), y]))
-        # add regularization
-        loss += 0.5 * self.reg * (np.sum(W1**2) + np.sum(W2**2))
+        # calculate the loss
+        loss, d_scores = softmax_loss(scores, y)
 
-        safe_exp[range(N), y]  -= 1
-        dloss = safe_exp / N
+        # Reg
+        loss += self.reg * 0.5 * (np.sum(W1*W1) + np.sum(W2*W2))
 
+        # backpropagation 
+        d_h1, d_w2, d_b2 = affine_backward(d_scores, cache_2)
+        d_x, d_w1, d_b1 = affine_relu_backward(d_h1, cache_1)
 
-        # calculate the gradients of the hidden layer
-        dout = np.dot(dloss, W2.T)
-        dW2 = np.dot(h1_relu.T, dloss)
-        db2 = np.sum(dloss, axis=0)
-
-        # calculate the gradients of the Relu layer
-        dhidden = dout * (h1 > 0)
-
-        # calculate the gradients of the input layer
-        dinput = np.dot(dhidden, W1.T)
-        dW1 = np.dot(X.T, dhidden)
-        db1 = np.sum(dhidden, axis=0)
-
-        # Regularization
-        dW1 += self.reg * W1
-        dW2 += self.reg * W2
-
-        grads = {'W1': dW1, 'b1': db1, 'W2': dW2, 'b2': db2}
-
+        # save gradients for each parameter
+        grads['W2'] = d_w2 + self.reg * W2
+        grads['W1'] = d_w1 + self.reg * W1
+        grads['b2'] = d_b2
+        grads['b1'] = d_b1
         
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -244,7 +215,18 @@ class FullyConnectedNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        network_dims = [hd for hd in hidden_dims]
+        network_dims.insert(0, input_dim)
+        network_dims.append(num_classes)
+
+
+        for layer in range(1, self.num_layers):
+            self.params['W' + layer] = weight_scale * np.random.randn(network_dims[layer-1], network_dims[layer])
+            self.params['b' + layer] = np.zeros(layer)
+
+            if self.normalization:
+                self.params['gamma' + layer] = np.ones(network_dims[layer])
+                self.params['beta' + layer] = np.zeros(network_dims[layer])
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -306,7 +288,7 @@ class FullyConnectedNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
