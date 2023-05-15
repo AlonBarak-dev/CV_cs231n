@@ -220,13 +220,13 @@ class FullyConnectedNet(object):
         network_dims.append(num_classes)
 
 
-        for layer in range(1, self.num_layers):
-            self.params['W' + layer] = weight_scale * np.random.randn(network_dims[layer-1], network_dims[layer])
-            self.params['b' + layer] = np.zeros(layer)
+        for layer in range(1, self.num_layers + 1):
+            self.params['W' + str(layer)] = weight_scale * np.random.randn(network_dims[layer-1], network_dims[layer])
+            self.params['b' + str(layer)] = np.zeros(network_dims[layer])
 
             if self.normalization:
-                self.params['gamma' + layer] = np.ones(network_dims[layer])
-                self.params['beta' + layer] = np.zeros(network_dims[layer])
+                self.params['gamma' + str(layer)] = np.ones(network_dims[layer])
+                self.params['beta' + str(layer)] = np.zeros(network_dims[layer])
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -288,7 +288,28 @@ class FullyConnectedNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        
+        caches = {}
+
+        for layer in range(1, self.num_layers):
+            # Load weights and biases for the current layer 
+            layer_w = self.params['W' + str(layer)]
+            layer_b = self.params['b' + str(layer)]
+            # check for normalization of any kind
+            if self.normalization:
+                pass
+            else:
+                # forward pass
+                X, layer_cache = affine_relu_forward(X, layer_w, layer_b)
+
+            # save the current cache
+            caches[layer] = layer_cache
+
+        # Softmax
+        w = self.params['W' + str(self.num_layers)]
+        b = self.params['b' + str(self.num_layers)]
+        scores, cache = affine_forward(X, w, b)
+        # Store the last layer cache
+        caches[self.num_layers] = cache
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -315,7 +336,27 @@ class FullyConnectedNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        # calculate network loss, scores == y?
+        loss, d_out = softmax_loss(scores, y)
+
+        # Add Regularization for each layer
+        for layer in range(1, self.num_layers + 1):
+            layer_w = self.params['W' + str(layer)]
+            loss += self.reg * 0.5 * np.sum(layer_w * layer_w)
+
+        # Backward pass
+        # Backprop from output layer:
+        d_out, d_w, d_b = affine_backward(d_out, caches[self.num_layers])
+        grads['W' + str(self.num_layers)] = d_w + self.reg * self.params['W' + str(self.num_layers)]
+        grads['b' + str(self.num_layers)] = d_b
+
+
+        for layer in range(self.num_layers - 2, -1, -1):
+          d_out, d_w, d_b = affine_relu_backward(d_out, caches[layer+1])
+
+          grads['W' + str(layer + 1)] = d_w + self.reg * self.params['W' + str(layer + 1)]
+          grads['b' + str(layer + 1)] = d_b
+
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################

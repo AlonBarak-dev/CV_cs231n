@@ -27,9 +27,11 @@ def affine_forward(x, w, b):
     # will need to reshape the input into rows.                               #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-    inp = np.reshape(x, (x.shape[0], w.shape[0]))
+    dim_size = x[0].shape
 
-    out = (np.dot(inp, w)) + b
+    # (N, D) x (D, M) + (1, M)
+    out = x.reshape(x.shape[0], np.prod(dim_size)).dot(w)
+    out += b.reshape(1, -1) 
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -168,7 +170,27 @@ def conv_forward_naive(x, w, b, conv_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    stride = conv_param['stride']
+    pad = conv_param['pad']
+
+    N, C, H, W = x.shape
+    F, _, HH, WW = w.shape
+    H_ = (H + 2 * pad - HH) // stride + 1 
+    W_ = (W + 2 * pad - WW) // stride + 1
+
+
+    # Initialize the output array
+    out = np.zeros((N, F, H_, W_))
+
+    # pad the input 
+    x_pad = np.pad(x, ((0,0), (0,0),(pad, pad), (pad, pad)), 'constant')
+    
+    # Perform convolution on x_pad
+    for n in range(N): # for each neuron
+        for f in range(F): # for each filter/kernel
+            for i in range(0, H_): # for each y activation
+                for j in range(0, W_): # for each x activation
+                    out[n, f, i, j] = (x_pad[n, :, i*stride:i*stride+HH, j*stride:j*stride+WW] * w[f, :, :, :]).sum() + b[f]
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -196,8 +218,40 @@ def conv_backward_naive(dout, cache):
     # TODO: Implement the convolutional backward pass.                        #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    
+    x_pad, w, b, conv_param = cache
+    N, F, H_, W_ = dout.shape
+    N, C, H, W = x_pad.shape
+    HH, WW = w.shape[2], w.shape[3]
+    
+    p = conv_param['pad']
+    s = conv_param['stride']
 
-    pass
+    # initialize gradients
+    dx = np.zeros((N, C, H - 2*p, W - 2*p))
+    dw = np.zeros(w.shape)
+    
+    # create w_row matrix
+    w_row = w.reshape(F, C*HH*WW)                            #[F x C*HH*WW]
+
+    # create x_col matrix with values that each neuron is connected to
+    x_col = np.zeros((C*HH*WW, H_*W_))                   #[C*HH*WW x H'*W']
+    
+    for index in range(N):
+        out_col = dout[index].reshape(F, H_*W_)          #[F x H'*W']
+        w_out = w_row.T.dot(out_col)                         #[C*HH*WW x H'*W']
+        dx_cur = np.zeros((C, H, W))
+        neuron = 0
+        for i in range(0, H-HH+1, s):
+            for j in range(0, W-WW+1, s):
+                dx_cur[:,i:i+HH,j:j+WW] += w_out[:,neuron].reshape(C,HH,WW)
+                x_col[:,neuron] = x_pad[index,:,i:i+HH,j:j+WW].reshape(C*HH*WW)
+                neuron += 1
+        dx[index] = dx_cur[:,p:-p, p:-p]
+        dw += out_col.dot(x_col.T).reshape(F,C,HH,WW)
+
+    
+    db = np.sum(dout, axis=(0, 2, 3))
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -231,7 +285,25 @@ def max_pool_forward_naive(x, pool_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    # extract params 
+    N, C, H, W = x.shape
+    HH = pool_param.get('pool_height', 2)
+    WW = pool_param.get('pool_width', 2)
+    stride = pool_param.get('stride', 2)
+
+    # output volume size
+    # note that the // division yields an int (while / yields a float)
+    Hout = (H - HH) // stride + 1
+    Wout = (W - WW) // stride + 1
+
+    # create output volume tensor after maxpool
+    out = np.zeros((N, C, Hout, Wout)) # output has same dims NCHW format as input
+
+    # naive Loops
+    for n in range(N): # for each neuron
+        for i in range(Hout): # for each y activation
+            for j in range(Wout): # for each x activation
+                out[n, :, i, j] = np.amax(x[n, :, i*stride:i*stride+HH, j*stride:j*stride+WW], axis=(-1, -2))
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -258,7 +330,31 @@ def max_pool_backward_naive(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    # Extract constants and shapes
+    x, pool_param = cache
+    N, C, H, W = x.shape
+    HH = pool_param.get('pool_height', 2)
+    WW = pool_param.get('pool_width', 2)
+    stride = pool_param.get('stride', 2)
+
+    # output volume size
+    # note that the // division yields an int (while / yields a float)
+    Hout = (H - HH) // stride + 1 
+    Wout = (W - WW) // stride + 1
+
+    # output volume size
+    dx = np.zeros_like(x)
+    
+    # naive loops
+    for n in range(N): # for each neuron
+        for c in range(C): # for each channel
+            for i in range(Hout): # for each y activation
+                for j in range(Wout): # for each x activation
+                    # pass gradient only through indices of max pool
+                    ind = np.argmax(x[n, c, i*stride:i*stride+HH, j*stride:j*stride+WW])
+                    ind1, ind2 = np.unravel_index(ind, (HH, WW))
+                    dx[n, c, i*stride:i*stride+HH, j*stride:j*stride+WW][ind1, ind2] = dout[n, c, i, j]
+
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
