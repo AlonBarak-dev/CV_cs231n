@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch.nn.functional as F
 
 class Print(nn.Module):
     def __init__(self):
@@ -47,22 +48,26 @@ class RiceDetector(nn.Module):
         # feature extraction
         x = self.batch_norm_1(x)
         x = self.conv_1(x)
-        x = self.relu(x)
+        # x = self.relu(x)
+        x = F.relu(x)
         x = self.pool_1(x)
         
-        x = self.batch_norm_2(x)
+        # x = self.batch_norm_2(x)
         x = self.conv_2(x)
-        x = self.relu(x)
+        # x = self.relu(x)
+        x = F.relu(x)
         x = self.pool_2(x)
         
-        x = self.batch_norm_3(x)
+        # x = self.batch_norm_3(x)
         x = self.conv_3(x)
-        x = self.relu(x)
+        # x = self.relu(x)
+        x = F.relu(x)
         x = self.pool_3(x)
         
-        x = self.batch_norm_4(x)
+        # x = self.batch_norm_4(x)
         x = self.conv_4(x)
-        x = self.relu(x)
+        # x = self.relu(x)
+        x = F.relu(x)
         x = self.pool_4(x)
         
         # Flatten
@@ -70,15 +75,17 @@ class RiceDetector(nn.Module):
         
         # classifier
         x = self.fc_1(x)
-        x = self.relu(x)
+        # x = self.relu(x)
+        x = F.relu(x)
         
         x = self.fc_2(x)
-        x = self.relu(x)
+        # x = self.relu(x)
+        x = F.relu(x)
         
         logits = self.fc_3(x)
         
         # Softmax
-        prob = nn.Softmax(logits).dim
+        prob = nn.LogSoftmax(dim=1)(logits)
         
         return prob
         

@@ -45,6 +45,6 @@ rm -f ${ZIP_FILENAME}
 zip -q "${ZIP_FILENAME}" -r ${NOTEBOOKS[@]} $(find . -name "*.py") $(find . -name "*.pyx") -x "makepdf.py"
 
 echo -e "### Creating PDFs ###"
-python makepdf.py --notebooks "${NOTEBOOKS[@]}"
+python3 makepdf.py --notebooks "${NOTEBOOKS[@]}"
 
 echo -e "### Done! Please submit a2.zip and the pdfs to Gradescope. ###"
